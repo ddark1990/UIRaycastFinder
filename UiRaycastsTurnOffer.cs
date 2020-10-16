@@ -1,7 +1,9 @@
 ﻿#if UNITY_EDITOR
 using System;
+using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using EditorGUI = UnityEditor.Experimental.Networking.PlayerConnection.EditorGUI;
 
@@ -9,8 +11,8 @@ namespace EditorTools
 {
     public class UiRaycastsTurnOffer : EditorWindow
     {
-        public Image[] allImageComponents;
-        public Text[] allTextComponents;
+        public List<Image> allImageComponents;
+        public List<Text> allTextComponents;
 
         private bool _onGetAllImageComponentsPressed;
         private bool _onGetAllTextComponentsPressed;
@@ -74,6 +76,7 @@ namespace EditorTools
             
             scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition, false, false);
 
+            EditorGUILayout.LabelField("Debug", EditorStyles.boldLabel);
             GUILayout.BeginHorizontal();
             GUILayout.BeginVertical(GUI.skin.box, GUILayout.Width(float1));
             EditorGUILayout.PropertyField(imageComponents, true);
@@ -99,12 +102,36 @@ namespace EditorTools
 
         private void GetAllSceneUiImageComponents()
         {
-            allImageComponents = FindObjectsOfType<Image>();
-            
-            
-        }private void GetAllSceneUiTextComponents()
+            foreach (var obj in GetAllObjectsOnlyInScene())
+            {
+                var image = obj.GetComponentInChildren<Image>();
+                if(image != null)
+                    allImageComponents.Add(image);
+            }
+        }
+        
+        private void GetAllSceneUiTextComponents()
         {
-            allTextComponents = FindObjectsOfType<Text>();
+            foreach (var obj in GetAllObjectsOnlyInScene())
+            {
+                var text = obj.GetComponentInChildren<Text>();
+                
+                if(text != null)
+                    allTextComponents.Add(text);
+            }
+        }
+
+        private List<GameObject> GetAllObjectsOnlyInScene()
+        {
+            var objectsInScene = new List<GameObject>();
+
+            foreach (var go in (GameObject[]) Resources.FindObjectsOfTypeAll(typeof(GameObject)))
+            {
+                if (!EditorUtility.IsPersistent(go.transform.root.gameObject) && !(go.hideFlags == HideFlags.NotEditable || go.hideFlags == HideFlags.HideAndDontSave))
+                    objectsInScene.Add(go);
+            }
+
+            return objectsInScene;
         }
 
         private void RaycastsForTextComponents(bool active)
@@ -124,8 +151,8 @@ namespace EditorTools
 
         private void ClearAll()
         {
-            allTextComponents = new Text[0];
-            allImageComponents = new Image[0];
+            allTextComponents.Clear();
+            allImageComponents.Clear();
         }
     }
     
